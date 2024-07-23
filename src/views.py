@@ -3,8 +3,12 @@
 """This module provides views to manage the contacts table."""
 
 from PyQt6.QtWidgets import (
-    QHBoxLayout as qbl,
+    QAbstractItemView as absview,
+    QHBoxLayout as qbox,
     QMainWindow as win,
+    QPushButton as pushbtn,
+    QTableView as tview,
+    QVBoxLayout as vbox,
     QWidget as widg,
 )
 
@@ -17,6 +21,27 @@ class Window(win):
         self.resize(550,250)
         self.centralWidget = widg()
         self.setCentralWidget(self.centralWidget)
-        self.layout = qbl()
+        self.layout = qbox()
         self.centralWidget.setLayout(self.layout)
+
+        self.setupUI()
+    
+    def setupUI(self):
+        """Setup Main Window GUI"""
+        self.table = tview()
+        self.table.setSelectionBehavior(absview.SelectionBehavior.SelectRows)
+        self.table.resizeColumnsToContents()
+        
+        self.addBtn = pushbtn("Add...")
+        self.delBtn = pushbtn("Delete")
+        self.clrAll = pushbtn("Clear All")
+
+        layout = vbox()
+        layout.addWidget(self.addBtn)
+        layout.addWidget(self.delBtn)
+        layout.addStretch()
+        layout.addWidget(self.clrAll)
+        self.layout.addWidget(self.table)
+        self.layout.addLayout(layout)
+
 
