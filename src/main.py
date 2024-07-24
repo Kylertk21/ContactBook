@@ -6,12 +6,15 @@
 import sys
 
 from PyQt6.QtWidgets import QApplication as qapp
-
+from .database import createConnection 
 from .views import Window
 
 def main():
     """RP Contacts main function"""
     app = qapp(sys.argv)
+
+    if not createConnection("contacts"):
+        sys.exit(1)
     win = Window()
     win.show()
     sys.exit(app.exec())
