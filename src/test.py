@@ -52,7 +52,6 @@ for name, phone, email in data:
     insert.addBindValue(email)
     insert.exec()
 
-
 printout.exec()
 
 while printout.next():

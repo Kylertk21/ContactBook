@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
     QVBoxLayout as vbox,
     QWidget as widg,
 )
+from .model import ContactsModel
 
 class Window(win):
     """Main Window"""
@@ -23,14 +24,14 @@ class Window(win):
         self.setCentralWidget(self.centralWidget)
         self.layout = qbox()
         self.centralWidget.setLayout(self.layout)
-
+        self.contactsModel = ContactsModel()
         self.setupUI()
     
     def setupUI(self):
         """Setup Main Window GUI"""
         self.table = tview()
+        self.table.setModel(self.contactsModel.model)
         self.table.setSelectionBehavior(absview.SelectionBehavior.SelectRows)
-        self.table.resizeColumnsToContents()
         
         self.addBtn = pushbtn("Add...")
         self.delBtn = pushbtn("Delete")
@@ -43,5 +44,7 @@ class Window(win):
         layout.addWidget(self.clrAll)
         self.layout.addWidget(self.table)
         self.layout.addLayout(layout)
+
+        self.table
 
 
