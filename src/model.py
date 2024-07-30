@@ -47,3 +47,16 @@ class ContactsModel:
         self.model.submitAll()
         self.model.setEditStrategy(qtmodel.EditStrategy.OnFieldChange)
         self.model.select()
+
+    def fetchContacts(self):
+        """Fetch all contacts from DB"""
+        contacts = []
+        self.model.select()
+        for row in range(self.model.rowCount()):
+            contact = {
+                'name': self.model.data(self.model.index(row, 1)),
+                'phone': self.model.data(self.model.index(row, 2)),
+                'email': self.model.data(self.model.index(row, 3))
+            }
+            contacts.append(contact)
+        return contacts

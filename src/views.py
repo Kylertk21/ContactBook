@@ -14,7 +14,10 @@ from PyQt6.QtWidgets import (
     QDialogButtonBox as bbox,
     QFormLayout as flayout,
     QLineEdit as ledit,
-    QMessageBox as msbox
+    QMessageBox as msbox,
+    QStackedWidget as stack,
+    QLabel as label,
+    QGroupBox as gbox
 )
 from PyQt6.QtCore import Qt
 from .model import ContactsModel
@@ -37,6 +40,9 @@ class Window(win):
             exit(1)
         
         self.contactsModel = ContactsModel()
+        self.stackedWidget = stack()
+        self.layout.addWidget(self.stackedWidget)
+
         self.setupUI()
     
     def setupUI(self):
@@ -49,23 +55,59 @@ class Window(win):
         self.addBtn.clicked.connect(self.openAddDialog)
         self.delBtn = pushbtn("Delete")
         self.delBtn.clicked.connect(self.deleteContact)
+        
+        #TODO: Add functions for Next and Previous buttons
+        self.nextBtn = pushbtn("Next")
+        self.nextBtn.clicked.connect(self.nextContact)
+        self.prevBtn = pushbtn("Previous")
+        self.prevBtn.clicked.connect(self.prevContact)
+
         self.clrAll = pushbtn("Clear All")
         self.clrAll.clicked.connect(self.clearContacts)
 
-        layout = vbox()
-        layout.addWidget(self.addBtn)
-        layout.addWidget(self.delBtn)
-        layout.addStretch()
-        layout.addWidget(self.clrAll)
-        self.layout.addWidget(self.table)
-        self.layout.addLayout(layout)
+        navLayout = qbox()
+        navLayout.addWidget(self.prevBtn)
+        navLayout.addWidget(self.nextBtn)
+        
+        ctlLayout = qbox()
+        ctlLayout.addWidget(self.addBtn)
+        ctlLayout.addWidget(self.delBtn)
+        ctlLayout.addWidget(self.clrAll)
 
-        self.table
+        self.layout.addLayout(navLayout)
+        self.layout.addWidget(self.stackedWidget)
+        self.layout.addLayout(ctlLayout)
+
+        self.updatePages()
     
+    def updatePages(self):
+        """Updates pages in the stacked widget"""
+        while self.stackedWidget.count():
+            widget = self.stackedWidget.widget(0)
+            self.stackedWidget.removeWidget(widget)
+            widget.deleteLater()
+
+        contacts = self.contactsModel.fetchContacts()
+
+        for contact in contacts:
+            page = widg()
+            layout = vbox(page)
+
+            contactBox = gbox("Contacts")
+            contactLayout = flayout(contactBox)
+            contactLayout.addRow("Name:", label(contact['name']))
+            contactLayout.addRow("Phone:", label(contact['phone']))
+            contactLayout.addRow("Email:", label(contact['email']))
+
+            layout.addWidget(contactBox)
+            self.stackedWidget.addWidget(page)
+
     def openAddDialog(self):
         dialog = AddDialog(self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.contactsModel.addContact(dialog.data)
+            self.updatePages()
+            self.table.setModel(self.contactsModel.model)
             self.table.resizeColumnsToContents()
 
     def deleteContact(self):
@@ -82,6 +124,20 @@ class Window(win):
 
         if messageBox == msbox.StandardButton.Ok:
             self.contactsModel.deleteContact(row)
+            self.updatePages()
+
+    def nextContact(self):
+        """Navigates to next contact page"""
+        currentIndex = self.stackedWidget.currentIndex()
+        if currentIndex < self.stackedWidget.count() - 1:
+            self.stackedWidget.setCurrentIndex(currentIndex + 1)
+
+    def prevContact(self):
+        """Navigates to previous contact page"""
+        currentIndex = self.stackedWidget.currentIndex()
+        if currentIndex > 0:
+            self.stackedWidget.setCurrentIndex(currentIndex - 1)
+
 
     def clearContacts(self):
         """Clears contacts from DB (GUI)"""
@@ -94,6 +150,7 @@ class Window(win):
 
         if messageBox == msbox.StandardButton.Ok:
             self.contactsModel.clearContacts()
+            self.updatePages()
 
 class AddDialog(QDialog):
     """Add Contact Dialog Box"""
