@@ -15,12 +15,6 @@ def main():
 
     if not createConnection("contacts"):
         sys.exit(1)
-    
-    stylesheet = Window.stylesheet("src/stylesheet.css")
-    app.setStyleSheet(stylesheet)
-
     win = Window()
     win.show()
     sys.exit(app.exec())
-
-    
