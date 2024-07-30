@@ -48,7 +48,9 @@ class Window(win):
         self.addBtn = pushbtn("Add...")
         self.addBtn.clicked.connect(self.openAddDialog)
         self.delBtn = pushbtn("Delete")
+        self.delBtn.clicked.connect(self.deleteContact)
         self.clrAll = pushbtn("Clear All")
+        self.clrAll.clicked.connect(self.clearContacts)
 
         layout = vbox()
         layout.addWidget(self.addBtn)
@@ -65,6 +67,33 @@ class Window(win):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.contactsModel.addContact(dialog.data)
             self.table.resizeColumnsToContents()
+
+    def deleteContact(self):
+        """Deletes Contact From DB (GUI)"""
+        row = self.table.currentIndex().row()
+        if row < 0:
+            return
+        messageBox = msbox.warning(
+            self,
+            "Warning!",
+            "Do you want to remove the selected contact?",
+            msbox.StandardButton.Ok | msbox.StandardButton.Cancel
+        )
+
+        if messageBox == msbox.StandardButton.Ok:
+            self.contactsModel.deleteContact(row)
+
+    def clearContacts(self):
+        """Clears contacts from DB (GUI)"""
+        messageBox = msbox.warning(
+            self,
+            "Warning!",
+            "Do you want to remove all your contacts?",
+            msbox.StandardButton.Ok  |  msbox.StandardButton.Cancel
+        )
+
+        if messageBox == msbox.StandardButton.Ok:
+            self.contactsModel.clearContacts()
 
 class AddDialog(QDialog):
     """Add Contact Dialog Box"""

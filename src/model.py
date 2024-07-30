@@ -15,7 +15,7 @@ class ContactsModel:
     def _createModel():
         tableModel = qtmodel()
         tableModel.setTable("contacts")
-        tableModel.setEditStrategy(qtmodel.EditStrategy.OnManualSubmit)
+        tableModel.setEditStrategy(qtmodel.EditStrategy.OnFieldChange)
         tableModel.select()
         headers = ("ID", "Name", "Phone", "Email")
         for columnIndex, header in enumerate(headers):
@@ -32,4 +32,18 @@ class ContactsModel:
         if not self.model.submitAll():
             msbox.critical(None, "Database Error", 
                            f"Error submitting data: {self.model.lastError().text()}")
+        self.model.select()
+
+    def deleteContact(self, row):
+        """Removes Contacts From DB"""
+        self.model.removeRow(row)
+        self.model.submitAll()
+        self.model.select()
+
+    def clearContacts(self):
+        """Clears all contacts in the DB"""
+        self.model.setEditStrategy(qtmodel.EditStrategy.OnManualSubmit)
+        self.model.removeRows(0, self.model.rowCount())
+        self.model.submitAll()
+        self.model.setEditStrategy(qtmodel.EditStrategy.OnFieldChange)
         self.model.select()
