@@ -32,8 +32,8 @@ class Window(win):
         self.resize(550,250)
         self.centralWidget = widg()
         self.setCentralWidget(self.centralWidget)
-        self.layout = qbox()
-        self.centralWidget.setLayout(self.layout)
+        self.mainLayout = vbox()
+        self.centralWidget.setLayout(self.mainLayout)
         
         if not createConnection("contacts"):
             msbox.critical(None, 'Database Connection', 'Database connection failed!')
@@ -41,43 +41,37 @@ class Window(win):
         
         self.contactsModel = ContactsModel()
         self.stackedWidget = stack()
-        self.layout.addWidget(self.stackedWidget)
+        self.mainLayout.addWidget(self.stackedWidget)
 
         self.setupUI()
     
     def setupUI(self):
         """Setup Main Window GUI"""
-        self.table = tview()
-        self.table.setModel(self.contactsModel.model)
-        self.table.setSelectionBehavior(absview.SelectionBehavior.SelectRows)
-        
+
         self.addBtn = pushbtn("Add...")
         self.addBtn.clicked.connect(self.openAddDialog)
-        self.delBtn = pushbtn("Delete")
-        self.delBtn.clicked.connect(self.deleteContact)
-        
-        #TODO: Add functions for Next and Previous buttons
+        self.clrAll = pushbtn("Clear All")
+        self.clrAll.clicked.connect(self.clearContacts)
+
+        topLayout = qbox()
+        topLayout.addStretch()
+        topLayout.addWidget(self.addBtn)
+        topLayout.addWidget(self.clrAll)
+        self.mainLayout.addLayout(topLayout)
+
+        self.mainLayout.addWidget(self.stackedWidget)
+
         self.nextBtn = pushbtn("Next")
         self.nextBtn.clicked.connect(self.nextContact)
         self.prevBtn = pushbtn("Previous")
         self.prevBtn.clicked.connect(self.prevContact)
 
-        self.clrAll = pushbtn("Clear All")
-        self.clrAll.clicked.connect(self.clearContacts)
-
         navLayout = qbox()
         navLayout.addWidget(self.prevBtn)
         navLayout.addWidget(self.nextBtn)
-        
-        ctlLayout = qbox()
-        ctlLayout.addWidget(self.addBtn)
-        ctlLayout.addWidget(self.delBtn)
-        ctlLayout.addWidget(self.clrAll)
 
-        self.layout.addLayout(navLayout)
-        self.layout.addWidget(self.stackedWidget)
-        self.layout.addLayout(ctlLayout)
-
+        self.mainLayout.addLayout(navLayout)
+     
         self.updatePages()
     
     def updatePages(self):
@@ -89,15 +83,35 @@ class Window(win):
 
         contacts = self.contactsModel.fetchContacts()
 
-        for contact in contacts:
+        for index, contact in enumerate(contacts):
             page = widg()
             layout = vbox(page)
 
             contactBox = gbox("Contacts")
             contactLayout = flayout(contactBox)
-            contactLayout.addRow("Name:", label(contact['name']))
-            contactLayout.addRow("Phone:", label(contact['phone']))
-            contactLayout.addRow("Email:", label(contact['email']))
+
+            self.nameField = ledit()
+            self.nameField.setText(contact['name'])
+            self.nameField.setObjectName(f"Name_{index}")
+            contactLayout.addRow("Name:", self.nameField)
+
+            self.phoneField = ledit()
+            self.phoneField.setText(contact['phone'])
+            self.phoneField.setObjectName(f"Phone_{index}")
+            contactLayout.addRow("Phone:", self.phoneField)
+
+            self.emailField = ledit()
+            self.emailField.setText(contact['email'])
+            self.emailField.setObjectName(f"Email_{index}")
+            contactLayout.addRow("Email:", self.emailField)
+
+            delBtn = pushbtn("Delete")
+            delBtn.clicked.connect(lambda _, i=index: self.deleteContact(i))
+            contactLayout.addWidget(delBtn)
+
+            saveBtn = pushbtn("Save")
+            saveBtn.clicked.connect(lambda _, i=index: self.saveContact(i))
+            contactLayout.addWidget(saveBtn)
 
             layout.addWidget(contactBox)
             self.stackedWidget.addWidget(page)
@@ -107,24 +121,73 @@ class Window(win):
         if dialog.exec() == QDialog.DialogCode.Accepted:
             self.contactsModel.addContact(dialog.data)
             self.updatePages()
-            self.table.setModel(self.contactsModel.model)
-            self.table.resizeColumnsToContents()
 
-    def deleteContact(self):
+    def deleteContact(self, index=None):
         """Deletes Contact From DB (GUI)"""
-        row = self.table.currentIndex().row()
-        if row < 0:
+        if index is None:
+            index = self.stackedWidget.currentIndex()
+
+        if index < 0 or index >= self.stackedWidget.count():
             return
+        
         messageBox = msbox.warning(
             self,
             "Warning!",
             "Do you want to remove the selected contact?",
-            msbox.StandardButton.Ok | msbox.StandardButton.Cancel
+            msbox.StandardButton.Ok  |  msbox.StandardButton.Cancel
         )
 
         if messageBox == msbox.StandardButton.Ok:
-            self.contactsModel.deleteContact(row)
-            self.updatePages()
+            if self.contactsModel.deleteContact(index):
+                msbox.information(self, 
+                                  "Success",
+                                  "Contact Deleted",
+                                  msbox.StandardButton.Ok)
+                self.updatePages()
+            else:
+                msbox.critical(self, 
+                               "Failed to delete contact:",
+                                "{self.model.lastError().text()}", 
+                                msbox.StandardButton.Ok)
+    def saveContact(self, index):
+        """Saves Contact to DB (GUI)"""
+        currentPage = self.stackedWidget.widget(index)
+        nameField = currentPage.findChild(ledit, f"Name_{index}")
+        phoneField = currentPage.findChild(ledit, f"Phone_{index}")
+        emailField = currentPage.findChild(ledit, f"Email_{index}")
+        
+        contact = {
+            'name': self.nameField.text(),
+            'phone': self.phoneField.text(),
+            'email': self.emailField.text()
+        }
+
+        contacts = self.contactsModel.fetchContacts()
+        contact_id = contacts[index]['id']
+
+        messageBox = msbox.warning(
+            self,
+            "Warning!",
+            "Do you want to change the contact's data?",
+            msbox.StandardButton.Ok  |  msbox.StandardButton.Cancel
+        )
+
+        if messageBox == msbox.StandardButton.Ok:
+            if self.contactsModel.updateContacts(contact_id, contact):
+                msbox.information(
+                    self,
+                    "Success",
+                    "Contact updated successfully",
+                    msbox.StandardButton.Ok
+                )
+                self.updatePages()
+            else:
+                msbox.critical(
+                    self,
+                    "Error",
+                    "Failed to update contact: {self.model.lastError.text()}",
+                    msbox.StandardButton.Ok
+                )
 
     def nextContact(self):
         """Navigates to next contact page"""

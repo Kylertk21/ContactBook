@@ -4,12 +4,13 @@
 """Provides a model to manage the contacts table"""
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtSql import QSqlTableModel as qtmodel
-from PyQt6.QtWidgets import QMessageBox as msbox
+from PyQt6.QtSql import QSqlTableModel as qtmodel, QSqlQuery
+from PyQt6.QtWidgets import QMessageBox as msbox, QStackedWidget as qstack
 
 class ContactsModel:
     def __init__(self):
         self.model = self._createModel()
+        self.contacts = self.fetchContacts()
 
     @staticmethod
     def _createModel():
@@ -34,11 +35,15 @@ class ContactsModel:
                            f"Error submitting data: {self.model.lastError().text()}")
         self.model.select()
 
-    def deleteContact(self, row):
+    def deleteContact(self, index):
         """Removes Contacts From DB"""
-        self.model.removeRow(row)
-        self.model.submitAll()
-        self.model.select()
+        if index >= 0:
+            self.model.removeRows(index, 1)
+            if not self.model.submitAll():
+                msbox.critical(None, "Error deleting from DB: {self.model.lastError().text()}")
+                return False
+            return True
+        return False
 
     def clearContacts(self):
         """Clears all contacts in the DB"""
@@ -54,9 +59,26 @@ class ContactsModel:
         self.model.select()
         for row in range(self.model.rowCount()):
             contact = {
+                'id': self.model.data(self.model.index(row, 0)),
                 'name': self.model.data(self.model.index(row, 1)),
                 'phone': self.model.data(self.model.index(row, 2)),
                 'email': self.model.data(self.model.index(row, 3))
             }
             contacts.append(contact)
         return contacts
+    
+    def updateContacts(self, contact_id, contact):
+        """Saves field edits to DB"""
+
+        query = QSqlQuery()
+        query.prepare("""
+                      UPDATE contacts
+                      SET name = :name, phone = :phone, email = :email
+                      WHERE id = :id
+                      """)
+        query.bindValue(":name", contact['name'])
+        query.bindValue(":phone", contact['phone'])
+        query.bindValue(":email", contact['email'])
+        query.bindValue(":id", contact_id)
+
+        return query.exec()
