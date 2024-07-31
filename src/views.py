@@ -23,6 +23,15 @@ from PyQt6.QtCore import Qt
 from .model import ContactsModel
 from .database import createConnection
 
+class LinedWidget(widg):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setObjectName("linedWidget")
+        layout = vbox(self)
+        self.setLayout(layout)
+
+        self.nameField = ledit()
+        layout.addWidget
 class Window(win):
     """Main Window"""
     def __init__(self, parent=None):
