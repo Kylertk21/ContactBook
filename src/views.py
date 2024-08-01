@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QGroupBox as gbox
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPainter, QColor, QPen
 from .model import ContactsModel
 from .database import createConnection
 
@@ -30,7 +31,8 @@ class Window(win):
         super().__init__(parent)
         self.setWindowTitle("Rp Contacts")
         self.resize(550,250)
-        self.centralWidget = widg()
+
+        self.centralWidget = Cosmetics()
         self.setCentralWidget(self.centralWidget)
         self.mainLayout = vbox()
         self.centralWidget.setLayout(self.mainLayout)
@@ -49,8 +51,11 @@ class Window(win):
         """Setup Main Window GUI"""
 
         self.addBtn = pushbtn("Add...")
+        self.addBtn.setStyleSheet("font-weight: bold; background-color: #edc45c; color: #026b20")
         self.addBtn.clicked.connect(self.openAddDialog)
+
         self.clrAll = pushbtn("Clear All")
+        self.clrAll.setStyleSheet("font-weight: bold; background-color: #edc45c; color: #bf0202")
         self.clrAll.clicked.connect(self.clearContacts)
 
         topLayout = qbox()
@@ -62,8 +67,11 @@ class Window(win):
         self.mainLayout.addWidget(self.stackedWidget)
 
         self.nextBtn = pushbtn("Next")
+        self.nextBtn.setStyleSheet("font-weight: bold; background-color: #edc45c; color: #0d0187")
         self.nextBtn.clicked.connect(self.nextContact)
+
         self.prevBtn = pushbtn("Previous")
+        self.prevBtn.setStyleSheet("font-weight: bold; background-color: #edc45c; color: #0d0187")
         self.prevBtn.clicked.connect(self.prevContact)
 
         navLayout = qbox()
@@ -88,30 +96,42 @@ class Window(win):
             layout = vbox(page)
 
             contactBox = gbox("Contacts")
+            contactBox.setStyleSheet("font-weight: bold; color: #bf0202")
             contactLayout = flayout(contactBox)
 
             self.nameField = ledit()
             self.nameField.setText(contact['name'])
             self.nameField.setObjectName(f"Name_{index}")
-            contactLayout.addRow("Name:", self.nameField)
+            self.nameLabel = label("Name")
+            self.nameField.setStyleSheet("font-weight: bold; color: #000000; background-color: #f5eeb5")
+            self.nameLabel.setStyleSheet("font-weight: bold; color: #0d0187")
+            contactLayout.addRow(self.nameLabel, self.nameField)
 
             self.phoneField = ledit()
             self.phoneField.setText(contact['phone'])
             self.phoneField.setObjectName(f"Phone_{index}")
-            contactLayout.addRow("Phone:", self.phoneField)
+            self.phoneLabel = label("Phone")
+            self.phoneField.setStyleSheet("font-weight: bold; color: #000000; background-color: #f5eeb5")
+            self.phoneLabel.setStyleSheet("font-weight: bold; color: #0d0187")
+            contactLayout.addRow(self.phoneLabel, self.phoneField)
 
             self.emailField = ledit()
             self.emailField.setText(contact['email'])
             self.emailField.setObjectName(f"Email_{index}")
-            contactLayout.addRow("Email:", self.emailField)
+            self.emailLabel = label("Email")
+            self.emailField.setStyleSheet("font-weight: bold; color: #000000; background-color: #f5eeb5")
+            self.emailLabel.setStyleSheet("font-weight: bold; color: #0d0187")
+            contactLayout.addRow(self.emailLabel, self.emailField)
 
-            delBtn = pushbtn("Delete")
-            delBtn.clicked.connect(lambda _, i=index: self.deleteContact(i))
-            contactLayout.addWidget(delBtn)
+            self.delBtn = pushbtn("Delete")
+            self.delBtn.setStyleSheet("font-weight: bold; background-color: #edc45c")
+            self.delBtn.clicked.connect(lambda _, i=index: self.deleteContact(i))
+            contactLayout.addWidget(self.delBtn)
 
-            saveBtn = pushbtn("Save")
-            saveBtn.clicked.connect(lambda _, i=index: self.saveContact(i))
-            contactLayout.addWidget(saveBtn)
+            self.saveBtn = pushbtn("Save")
+            self.saveBtn.setStyleSheet("font-weight: bold; background-color: #edc45c; color: #026b20")
+            self.saveBtn.clicked.connect(lambda _, i=index: self.saveContact(i))
+            contactLayout.addWidget(self.saveBtn)
 
             layout.addWidget(contactBox)
             self.stackedWidget.addWidget(page)
@@ -214,6 +234,27 @@ class Window(win):
         if messageBox == msbox.StandardButton.Ok:
             self.contactsModel.clearContacts()
             self.updatePages()
+
+class Cosmetics(widg):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAutoFillBackground(True)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        painter.fillRect(self.rect(), QColor("#faf6d5"))
+
+        pen = QPen(QColor("#e6e6e6"))
+        pen.setWidth(1)
+        painter.setPen(pen)
+        for y in range(0, self.height(), 20):
+            painter.drawLine(0, y, self.width(), y)
+
+        super().paintEvent(event)
+
+
 
 class AddDialog(QDialog):
     """Add Contact Dialog Box"""
